@@ -33,27 +33,23 @@ func Open(c *Config) (*IM920, error) {
 	return &IM920{s}, nil
 }
 
-// TODO: Improve error handling
-func (im *IM920) Write(p []byte) (n int, err error) {
-	command := "TXDA "
-
-	b2w := len(p)
-	if len(p) > maxTXDA {
-		b2w = maxTXDA
+func (im *IM920) IssueCommand(cmd, param string) error {
+	// TODO: BUSY WAIT
+	s := []string{cmd, param, "\r\n"}
+	_, err := im.s.Write([]byte(strings.Join(s, " ")))
+	if err != nil {
+		return fmt.Errorf("Failed to write: %s", err)
 	}
-	param := strings.ToUpper(hex.EncodeToString(p[:b2w]))
 
 	// TODO: BUSY WAIT
-	im.s.Write([]byte(command))
-	im.s.Write([]byte(param))
-	im.s.Write([]byte("\r\n"))
-
 	resp := make([]byte, respSize)
 	readed, err := im.s.Read(resp)
+	if err != nil {
+		return fmt.Errorf("Failed to read: %s", err)
+	}
 
 	switch string(resp[:readed]) {
 	case "OK\r\n":
-		n = b2w
 		err = nil
 	case "NG\r\n":
 		err = fmt.Errorf("NG response")
@@ -61,7 +57,25 @@ func (im *IM920) Write(p []byte) (n int, err error) {
 		err = fmt.Errorf("Unknown response")
 	}
 
-	return n, err
+	return err
+}
+
+func (im *IM920) Write(p []byte) (n int, err error) {
+	cmd := "TXDA"
+	b2w := len(p)
+	if len(p) > maxTXDA {
+		b2w = maxTXDA
+	}
+	param := strings.ToUpper(hex.EncodeToString(p[:b2w]))
+
+	err = im.IssueCommand(cmd, param)
+	if err != nil {
+		n = 0
+	} else {
+		n = b2w
+	}
+
+	return
 }
 
 func (im *IM920) Close() error {
