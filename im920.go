@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/tarm/serial"
+	"io"
 	"strings"
 	"time"
 )
@@ -14,7 +15,7 @@ type Config struct {
 }
 
 type IM920 struct {
-	s *serial.Port
+	s io.ReadWriteCloser
 }
 
 const (
