@@ -1,6 +1,7 @@
 package im920
 
 import (
+	"bytes"
 	"testing"
 )
 
@@ -64,6 +65,64 @@ func TestWrite(t *testing.T) {
 			(!tt.out_errorIsNil && (err == nil)) {
 			t.Errorf("[%d]Write(%v) => %v, want errorIsNil = %v",
 				i, tt.in_writeData, err, tt.out_errorIsNil)
+		}
+	}
+}
+
+var ReadTests = []struct {
+	in             []byte
+	out_data       []byte
+	out_n          int
+	out_errorIsNil bool
+}{
+	{
+		[]byte("00,06E5,B5:0A,1F,76,00,00,00,00,00\r\n"),
+		[]byte{0x0A, 0x1F, 0x76, 0x00, 0x00, 0x00, 0x00, 0x00}, 8, true,
+	},
+	{
+		[]byte("00,06E5,B5:0A,1F,76\r\n"),
+		[]byte{0x0A, 0x1F, 0x76}, 3, true,
+	},
+	{
+		[]byte("00,06E5,B5:0A,1F,76"),
+		[]byte{}, 0, false,
+	},
+	{
+		[]byte("00,06E5,B5:\r\n"),
+		[]byte{}, 0, false,
+	},
+	{
+		[]byte("00,06E5,B5\r\n"),
+		[]byte{}, 0, false,
+	},
+	{
+		[]byte(""),
+		[]byte{}, 0, false,
+	},
+}
+
+func TestRead(t *testing.T) {
+	serial := newFakeSerial()
+	im := &IM920{serial}
+
+	buf := make([]byte, maxReadSize)
+
+	for i, tt := range ReadTests {
+		serial.dummyData = tt.in
+		n, err := im.Read(buf)
+		if (tt.out_errorIsNil && (err != nil)) ||
+			(!tt.out_errorIsNil && (err == nil)) {
+			t.Errorf("[%d]Read() => %v, want errorIsNil = %v",
+				i, err, tt.out_errorIsNil)
+		}
+		if !bytes.Equal(buf[:n], tt.out_data) {
+			t.Errorf("[%d]Read() => %v, want data = %v",
+				i, buf, tt.out_data)
+		}
+
+		if n != tt.out_n {
+			t.Errorf("[%d]Read() => %v, want n = %v",
+				i, n, tt.out_n)
 		}
 	}
 }
