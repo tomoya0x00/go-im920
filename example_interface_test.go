@@ -7,6 +7,7 @@ import (
 )
 
 func Example() {
+    // This test will not be run, it has no "Output:" comment.
 	c := &im920.Config{Name: "COM4", ReadTimeout: 1 * time.Second}
 	im, err := im920.Open(c)
 	if err != nil {
@@ -21,6 +22,4 @@ func Example() {
 		fmt.Printf("Failed to write: %s\n", err)
 		return
 	}
-
-	// Output:
 }

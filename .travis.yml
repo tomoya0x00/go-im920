@@ -1,0 +1,10 @@
+language: go
+go:
+  - 1.5
+  - tip
+sudo: false
+install:
+  - go get github.com/tarm/serial
+branches:
+  only:
+  - master
