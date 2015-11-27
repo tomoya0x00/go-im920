@@ -3,6 +3,7 @@ package im920
 import (
 	"bytes"
 	"testing"
+	"time"
 )
 
 type fakeSerial struct {
@@ -55,7 +56,7 @@ var WriteTests = []struct {
 
 func TestWrite(t *testing.T) {
 	serial := newFakeSerial()
-	im := &IM920{serial}
+	im := &IM920{s: serial, readTimeout: 1 * time.Second}
 
 	for i, tt := range WriteTests {
 		serial.dummyData = tt.in_dummyData
@@ -103,7 +104,7 @@ var ReadTests = []struct {
 
 func TestRead(t *testing.T) {
 	serial := newFakeSerial()
-	im := &IM920{serial}
+	im := &IM920{s: serial, readTimeout: 1 * time.Second}
 
 	buf := make([]byte, maxReadSize)
 

@@ -3,10 +3,11 @@ package im920
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/tarm/serial"
 	"io"
 	"strings"
 	"time"
+
+	"github.com/tarm/serial"
 )
 
 type Config struct {
@@ -15,7 +16,8 @@ type Config struct {
 }
 
 type IM920 struct {
-	s io.ReadWriteCloser
+	s           io.ReadWriteCloser
+	readTimeout time.Duration
 }
 
 const (
@@ -32,7 +34,32 @@ func Open(c *Config) (*IM920, error) {
 		return &IM920{}, fmt.Errorf("Filed to open: %s", err)
 	}
 
-	return &IM920{s}, nil
+	return &IM920{s: s, readTimeout: sc.ReadTimeout}, nil
+}
+
+func (im *IM920) rcvResponse(p []byte) (readed int, err error) {
+	timer := time.NewTimer(im.readTimeout)
+
+	for {
+		select {
+		case <-timer.C:
+			if readed == 0 {
+				err = fmt.Errorf("Failed to read: no data")
+			}
+			return
+		default:
+			n, rerr := im.s.Read(p[readed:])
+			if rerr != nil {
+				err = fmt.Errorf("Failed to read: %s", err)
+				return
+			}
+			readed += n
+			if readed >= respSize {
+				return
+			}
+		}
+	}
+
 }
 
 func (im *IM920) IssueCommand(cmd, param string) error {
@@ -45,10 +72,7 @@ func (im *IM920) IssueCommand(cmd, param string) error {
 
 	// TODO: BUSY WAIT
 	resp := make([]byte, respSize)
-	readed, err := im.s.Read(resp)
-	if err != nil {
-		return fmt.Errorf("Failed to read: %s", err)
-	}
+	readed, err := im.rcvResponse(resp)
 
 	switch string(resp[:readed]) {
 	case "OK\r\n":
