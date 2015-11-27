@@ -7,7 +7,7 @@ import (
 )
 
 func Example() {
-	c := &im920.Config{Name: "COM4", ReadTimeout: time.Second * 1}
+	c := &im920.Config{Name: "COM4", ReadTimeout: 1 * time.Second}
 	im, err := im920.Open(c)
 	if err != nil {
 		fmt.Printf("Failed to open: %s\n", err)
