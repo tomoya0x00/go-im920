@@ -28,18 +28,22 @@ const (
 )
 
 func Open(c *Config) (*IM920, error) {
-	sc := &serial.Config{Name: c.Name, Baud: defaultBps, ReadTimeout: c.ReadTimeout}
+    t := (1000 * 100 * 8 / defaultBps) * time.Millisecond
+	sc := &serial.Config{Name: c.Name, Baud: defaultBps, ReadTimeout: t}
 	s, err := serial.OpenPort(sc)
 	if err != nil {
 		return &IM920{}, fmt.Errorf("Filed to open: %s", err)
 	}
 
-	return &IM920{s: s, readTimeout: sc.ReadTimeout}, nil
+	return &IM920{s: s, readTimeout: c.ReadTimeout}, nil
 }
 
-func (im *IM920) rcvResponse(p []byte) (readed int, err error) {
+func (im *IM920) receive(p []byte) (readed int, err error) {
 	timer := time.NewTimer(im.readTimeout)
+    defer timer.Stop()
 
+    readedInitialbyte := false
+    
 	for {
 		select {
 		case <-timer.C:
@@ -48,13 +52,20 @@ func (im *IM920) rcvResponse(p []byte) (readed int, err error) {
 			}
 			return
 		default:
-			n, rerr := im.s.Read(p[readed:])
+            n, rerr := im.s.Read(p[readed:readed+1])
 			if rerr != nil {
-				err = fmt.Errorf("Failed to read: %s", err)
+				err = fmt.Errorf("Failed to read : %s", rerr)
 				return
 			}
+            if n > 0 && !readedInitialbyte {
+                readedInitialbyte = true
+            }
+            if n == 0 && readedInitialbyte {
+                return
+            }
+
 			readed += n
-			if readed >= respSize {
+			if readed >= len(p) {
 				return
 			}
 		}
@@ -72,7 +83,7 @@ func (im *IM920) IssueCommand(cmd, param string) error {
 
 	// TODO: BUSY WAIT
 	resp := make([]byte, respSize)
-	readed, err := im.rcvResponse(resp)
+	readed, err := im.receive(resp)
 
 	switch string(resp[:readed]) {
 	case "OK\r\n":
@@ -80,7 +91,7 @@ func (im *IM920) IssueCommand(cmd, param string) error {
 	case "NG\r\n":
 		err = fmt.Errorf("NG response")
 	default:
-		err = fmt.Errorf("Unknown response")
+		err = fmt.Errorf("Unknown response: %v", resp[:readed])
 	}
 
 	return err
@@ -107,7 +118,7 @@ func (im *IM920) Write(p []byte) (n int, err error) {
 func (im *IM920) Read(p []byte) (n int, err error) {
 	buf := make([]byte, maxReadSize)
 
-	readed, err := im.s.Read(buf)
+	readed, err := im.receive(buf)
 	if err != nil {
 		return 0, fmt.Errorf("Failed to read: %s", err)
 	}
@@ -119,13 +130,13 @@ func (im *IM920) Read(p []byte) (n int, err error) {
 
 	dataStart := strings.Index(s, ":")
 	if dataStart < 0 {
-		return 0, fmt.Errorf("Failed to find the start of data")
+		return 0, fmt.Errorf("Failed to find the start of data : %s", s)
 	}
 
 	dataEnd := strings.Index(s, "\r\n")
 	if dataEnd < 0 {
-		return 0, fmt.Errorf("Failed to find the end of data")
-	}
+		return 0, fmt.Errorf("Failed to find the end of data : %s", s)
+	} 
 
 	dataStr := strings.Replace(s[dataStart+1:dataEnd], ",", "", -1)
 	read, err := hex.DecodeString(dataStr)
@@ -133,7 +144,7 @@ func (im *IM920) Read(p []byte) (n int, err error) {
 		return 0, fmt.Errorf("Failed to decode : %s", err)
 	}
 	if len(read) == 0 {
-		return 0, fmt.Errorf("Failed to decode: no data")
+		return 0, fmt.Errorf("Failed to decode : no data (%s)", s)
 	}
 
 	n = copy(p, read)

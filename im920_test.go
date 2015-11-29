@@ -85,6 +85,10 @@ var ReadTests = []struct {
 		[]byte{0x0A, 0x1F, 0x76}, 3, true,
 	},
 	{
+		[]byte("00,06E5,B5:0A\r\n"),
+		[]byte{0x0A}, 1, true,
+	},
+	{
 		[]byte("00,06E5,B5:0A,1F,76"),
 		[]byte{}, 0, false,
 	},
