@@ -7,7 +7,7 @@ import (
 )
 
 func Example() {
-    // This test will not be run, it has no "Output:" comment.
+	// This test will not be run, it has no "Output:" comment.
 	c := &im920.Config{Name: "COM4", ReadTimeout: 1 * time.Second}
 	im, err := im920.Open(c)
 	if err != nil {
@@ -15,6 +15,20 @@ func Example() {
 		return
 	}
 	defer im.Close()
+
+	id, err := im.IssueCommandRespNum("RDID", "")
+	if err != nil {
+		fmt.Printf("Failed to RDID: %s\n", err)
+		return
+	}
+	fmt.Printf("ID: %v\n", id)
+
+	version, err := im.IssueCommandRespStr("RDVR", "")
+	if err != nil {
+		fmt.Printf("Failed to RDVR: %s\n", err)
+		return
+	}
+	fmt.Printf("VERSION: %v\n", version)
 
 	data := []byte("0123456789")
 	_, err = im.Write(data)

@@ -2,6 +2,7 @@ package im920
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -24,7 +25,6 @@ type IM920 struct {
 const (
 	defaultBps  = 19200
 	maxTXDA     = 64
-	respSize    = 4
 	maxReadSize = 256
 )
 
@@ -84,7 +84,7 @@ func (im *IM920) IssueCommand(cmd, param string) (resp []byte, err error) {
 	}
 
 	// TODO: BUSY WAIT
-	rcv := make([]byte, respSize)
+	rcv := make([]byte, maxReadSize)
 	rcved, rerr := im.receive(rcv)
 	if rerr != nil {
 		err = fmt.Errorf("Failed to receive: %s", rerr)
@@ -113,6 +113,48 @@ func (im *IM920) IssueCommandNormal(cmd, param string) error {
 	}
 
 	return nil
+}
+
+func (im *IM920) IssueCommandRespStr(cmd, param string) (resp string, err error) {
+	rcv, err := im.IssueCommand(cmd, param)
+	if err != nil {
+		return
+	}
+
+	dataEnd := strings.Index(string(rcv), "\r\n")
+	if strings.Index(string(rcv), "\r\n") < 0 {
+		err = fmt.Errorf("Failed to find the end of data : %v", rcv)
+		return
+	}
+
+	resp = string(rcv[:dataEnd])
+
+	return
+}
+
+func (im *IM920) IssueCommandRespNum(cmd, param string) (resp uint16, err error) {
+	rcv, err := im.IssueCommandRespStr(cmd, param)
+	if err != nil {
+		return
+	}
+
+	b, err := hex.DecodeString(rcv)
+	if err != nil {
+		return
+	}
+
+	switch len(b) {
+	case 0:
+		err = fmt.Errorf("Failed to decode : no data (%v)", []byte(rcv))
+	case 1:
+		resp = uint16(b[0])
+	case 2:
+		resp = binary.BigEndian.Uint16(b)
+	default:
+		err = fmt.Errorf("Failed to decode : invalid size (%v)", b)
+	}
+
+	return
 }
 
 func (im *IM920) Write(p []byte) (n int, err error) {
