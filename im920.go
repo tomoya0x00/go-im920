@@ -1,6 +1,7 @@
 package im920
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
@@ -37,6 +38,26 @@ func Open(c *Config) (*IM920, error) {
 	}
 
 	return &IM920{s: s, readTimeout: c.ReadTimeout}, nil
+}
+
+func strToUint16(s string) (val uint16, err error) {
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		return
+	}
+
+	switch len(b) {
+	case 0:
+		err = fmt.Errorf("Failed to decode : no data (%v)", []byte(s))
+	case 1:
+		val = uint16(b[0])
+	case 2:
+		val = binary.BigEndian.Uint16(b)
+	default:
+		err = fmt.Errorf("Failed to decode : invalid size (%v)", b)
+	}
+
+	return
 }
 
 func (im *IM920) receive(p []byte) (readed int, err error) {
@@ -139,20 +160,30 @@ func (im *IM920) IssueCommandRespNum(cmd, param string) (resp uint16, err error)
 		return
 	}
 
-	b, err := hex.DecodeString(rcv)
+	resp, err = strToUint16(rcv)
+
+	return
+}
+
+func (im *IM920) IssueCommandRespNums(cmd, param string) (resp []uint16, err error) {
+	rcv, err := im.IssueCommandRespStr(cmd, param)
 	if err != nil {
 		return
 	}
 
-	switch len(b) {
-	case 0:
-		err = fmt.Errorf("Failed to decode : no data (%v)", []byte(rcv))
-	case 1:
-		resp = uint16(b[0])
-	case 2:
-		resp = binary.BigEndian.Uint16(b)
-	default:
-		err = fmt.Errorf("Failed to decode : invalid size (%v)", b)
+	scanner := bufio.NewScanner(bytes.NewReader([]byte(rcv)))
+
+	for scanner.Scan() {
+		val, terr := strToUint16(scanner.Text())
+		if terr != nil {
+			err = terr
+			return
+		}
+		resp = append(resp, val)
+	}
+
+	if len(resp) == 0 {
+		err = fmt.Errorf("Failed to receive: no data")
 	}
 
 	return

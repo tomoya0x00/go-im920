@@ -30,6 +30,13 @@ func Example() {
 	}
 	fmt.Printf("VERSION: %v\n", version)
 
+	rids, err := im.IssueCommandRespNums("RRID", "")
+	if err != nil {
+		fmt.Printf("Failed to RRID: %s\n", err)
+		return
+	}
+	fmt.Printf("RIDS: %v\n", rids)
+
 	data := []byte("0123456789")
 	_, err = im.Write(data)
 	if err != nil {

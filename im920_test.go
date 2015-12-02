@@ -2,6 +2,7 @@ package im920
 
 import (
 	"bytes"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -289,6 +290,74 @@ func TestIssueCommandRespNum(t *testing.T) {
 		}
 		if resp != tt.out {
 			t.Errorf("[%d]IssueCommandRespNum() => %v, want data = %v",
+				i, resp, tt.out)
+		}
+	}
+}
+
+var IssueCommandRespNumsTests = []struct {
+	in_cmd         string
+	in_param       string
+	in_dummyData   []byte
+	out            []uint16
+	out_errorIsNil bool
+}{
+	{
+		"HOGE", "HUGA", []byte("0\r\n"),
+		nil, false,
+	},
+	{
+		"HOGE", "HUGA", []byte("1\r\n"),
+		nil, false,
+	},
+	{
+		"HOGE", "HUGA", []byte("10\r\n"),
+		[]uint16{0x0010}, true,
+	},
+	{
+		"HOGE", "HUGA", []byte("101\r\n"),
+		nil, false,
+	},
+	{
+		"HOGE", "HUGA", []byte("1010\r\n"),
+		[]uint16{0x1010}, true,
+	},
+	{
+		"HOGE", "HUGA", []byte("1010\r\n0101\r\n"),
+		[]uint16{0x1010, 0x0101}, true,
+	},
+	{
+		"HOGE", "HUGA", []byte("01010\r\n"),
+		nil, false,
+	},
+	{
+		"HOGE", "HUGA", []byte("1"),
+		nil, false,
+	},
+	{
+		"HOGE", "HUGA", []byte(""),
+		nil, false,
+	},
+	{
+		"HOGE", "HUGA", []byte("\r\n"),
+		nil, false,
+	},
+}
+
+func TestIssueCommandRespNums(t *testing.T) {
+	serial := newFakeSerial()
+	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond}
+
+	for i, tt := range IssueCommandRespNumsTests {
+		serial.dummyData = tt.in_dummyData
+		resp, err := im.IssueCommandRespNums(tt.in_cmd, tt.in_param)
+		if (tt.out_errorIsNil && (err != nil)) ||
+			(!tt.out_errorIsNil && (err == nil)) {
+			t.Errorf("[%d]IssueCommandRespNums(%v, %v) => %v, want errorIsNil = %v",
+				i, tt.in_cmd, tt.in_param, err, tt.out_errorIsNil)
+		}
+		if !reflect.DeepEqual(resp, tt.out) {
+			t.Errorf("[%d]IssueCommandRespNums() => %v, want data = %v",
 				i, resp, tt.out)
 		}
 	}
