@@ -18,9 +18,16 @@ type Config struct {
 	ReadTimeout time.Duration
 }
 
+type ReadInfo struct {
+	Node   uint8
+	FromId uint16
+	Rssi   uint8
+}
+
 type IM920 struct {
-	s           io.ReadWriteCloser
-	readTimeout time.Duration
+	s            io.ReadWriteCloser
+	readTimeout  time.Duration
+	lastReadInfo ReadInfo
 }
 
 const (
@@ -56,6 +63,36 @@ func strToUint16(s string) (val uint16, err error) {
 	default:
 		err = fmt.Errorf("Failed to decode : invalid size (%v)", b)
 	}
+
+	return
+}
+
+func parseReadHeaders(s string) (info ReadInfo, err error) {
+	headers := strings.Split(s, ",")
+	if len(headers) < 3 {
+		err = fmt.Errorf("Failed to split headers : %s", s)
+		return
+	}
+
+	node, derr := hex.DecodeString(headers[0])
+	if derr != nil {
+		err = fmt.Errorf("Failed to decode node(%s) : %s", headers[0], derr)
+		return
+	}
+	info.Node = uint8(node[0])
+
+	info.FromId, derr = strToUint16(headers[1])
+	if err != nil {
+		err = fmt.Errorf("Failed to decode fromId(%s) : %s", headers[1], derr)
+		return
+	}
+
+	rssi, derr := hex.DecodeString(headers[2])
+	if err != nil {
+		err = fmt.Errorf("Failed to decode rssi(%s) : %s", headers[2], derr)
+		return
+	}
+	info.Rssi = uint8(rssi[0])
 
 	return
 }
@@ -218,30 +255,38 @@ func (im *IM920) Read(p []byte) (n int, err error) {
 		return 0, fmt.Errorf("Failed to read: no data")
 	}
 
-	s := string(buf)
-
-	dataStart := strings.Index(s, ":")
-	if dataStart < 0 {
-		return 0, fmt.Errorf("Failed to find the start of data : %s", s)
+	strs := strings.Split(string(buf), ":")
+	if len(strs) < 2 {
+		return 0, fmt.Errorf("Failed to split header and data : %s", string(buf))
 	}
 
-	dataEnd := strings.Index(s, "\r\n")
-	if dataEnd < 0 {
-		return 0, fmt.Errorf("Failed to find the end of data : %s", s)
-	}
-
-	dataStr := strings.Replace(s[dataStart+1:dataEnd], ",", "", -1)
-	read, err := hex.DecodeString(dataStr)
+	info, err := parseReadHeaders(strs[0])
 	if err != nil {
-		return 0, fmt.Errorf("Failed to decode : %s", err)
-	}
-	if len(read) == 0 {
-		return 0, fmt.Errorf("Failed to decode : no data (%s)", s)
+		return 0, fmt.Errorf("Failed to parseReadHeaders: %s", err)
 	}
 
-	n = copy(p, read)
+	dataEnd := strings.Index(strs[1], "\r\n")
+	if dataEnd < 0 {
+		return 0, fmt.Errorf("Failed to find the end of data : %s", strs[1])
+	}
+
+	dataStr := strings.Replace(strs[1][:dataEnd], ",", "", -1)
+	data, err := hex.DecodeString(dataStr)
+	if err != nil {
+		return 0, fmt.Errorf("Failed to decode(%s) : %s", dataStr, err)
+	}
+	if len(data) == 0 {
+		return 0, fmt.Errorf("Failed to decode : no data (%s)", strs[1])
+	}
+
+	n = copy(p, data)
+	im.lastReadInfo = info
 
 	return
+}
+
+func (im *IM920) LastReadInfo() ReadInfo {
+	return im.lastReadInfo
 }
 
 func (im *IM920) Close() error {

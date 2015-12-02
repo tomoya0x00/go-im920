@@ -25,5 +25,6 @@ func ExampleRead() {
 		}
 
 		fmt.Printf("Read Data: %v\n", buf[:n])
+		fmt.Printf("Read Info: %v\n", im.LastReadInfo())
 	}
 }

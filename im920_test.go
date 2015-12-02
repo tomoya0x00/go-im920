@@ -397,35 +397,56 @@ func TestWrite(t *testing.T) {
 var ReadTests = []struct {
 	in             []byte
 	out            []byte
+	out_readInfo   ReadInfo
 	out_errorIsNil bool
 }{
 	{
-		[]byte("00,06E5,B5:0A,1F,76,00,00,00,00,00\r\n"),
-		[]byte{0x0A, 0x1F, 0x76, 0x00, 0x00, 0x00, 0x00, 0x00}, true,
-	},
-	{
-		[]byte("00,06E5,B5:0A,1F,76\r\n"),
-		[]byte{0x0A, 0x1F, 0x76}, true,
-	},
-	{
-		[]byte("00,06E5,B5:0A\r\n"),
-		[]byte{0x0A}, true,
-	},
-	{
 		[]byte("00,06E5,B5:0A,1F,76"),
-		[]byte{}, false,
+		[]byte{},
+		ReadInfo{},
+		false,
 	},
 	{
 		[]byte("00,06E5,B5:\r\n"),
-		[]byte{}, false,
+		[]byte{},
+		ReadInfo{},
+		false,
 	},
 	{
 		[]byte("00,06E5,B5\r\n"),
-		[]byte{}, false,
+		[]byte{},
+		ReadInfo{},
+		false,
 	},
 	{
 		[]byte(""),
-		[]byte{}, false,
+		[]byte{},
+		ReadInfo{},
+		false,
+	},
+	{
+		[]byte("00,06E5,B5:0A,1F,76,00,00,00,00,00\r\n"),
+		[]byte{0x0A, 0x1F, 0x76, 0x00, 0x00, 0x00, 0x00, 0x00},
+		ReadInfo{Node: 0x00, FromId: 0x06E5, Rssi: 0xb5},
+		true,
+	},
+	{
+		[]byte("00,06E5,B5:0A,1F,76\r\n"),
+		[]byte{0x0A, 0x1F, 0x76},
+		ReadInfo{Node: 0x00, FromId: 0x06E5, Rssi: 0xb5},
+		true,
+	},
+	{
+		[]byte("00,06E5,B5:0A\r\n"),
+		[]byte{0x0A},
+		ReadInfo{Node: 0x00, FromId: 0x06E5, Rssi: 0xb5},
+		true,
+	},
+	{
+		[]byte("01,06E6,B6:0A\r\n"),
+		[]byte{0x0A},
+		ReadInfo{Node: 0x01, FromId: 0x06E6, Rssi: 0xb6},
+		true,
 	},
 }
 
@@ -446,6 +467,11 @@ func TestRead(t *testing.T) {
 		if !bytes.Equal(buf[:n], tt.out) {
 			t.Errorf("[%d]Read() => %v, want data = %v",
 				i, buf, tt.out)
+		}
+		info := im.LastReadInfo()
+		if info != tt.out_readInfo {
+			t.Errorf("[%d]LastReadInfo() => %v, want data = %v",
+				i, info, tt.out_readInfo)
 		}
 	}
 }
