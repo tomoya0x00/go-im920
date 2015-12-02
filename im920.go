@@ -118,10 +118,11 @@ func (im *IM920) IssueCommandNormal(cmd, param string) error {
 func (im *IM920) IssueCommandRespStr(cmd, param string) (resp string, err error) {
 	rcv, err := im.IssueCommand(cmd, param)
 	if err != nil {
+		resp = strings.Replace(string(rcv), "\r\n", "", -1)
 		return
 	}
 
-	dataEnd := strings.Index(string(rcv), "\r\n")
+	dataEnd := strings.LastIndex(string(rcv), "\r\n")
 	if strings.Index(string(rcv), "\r\n") < 0 {
 		err = fmt.Errorf("Failed to find the end of data : %v", rcv)
 		return

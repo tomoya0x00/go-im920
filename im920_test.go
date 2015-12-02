@@ -110,6 +110,10 @@ var IssueCommandTests = []struct {
 		"HOGE", "HUGA", []byte(""),
 		[]byte(""), false,
 	},
+	{
+		"HOGE", "HUGA", []byte("\r\n"),
+		[]byte("\r\n"), true,
+	},
 }
 
 func TestIssueCommand(t *testing.T) {
@@ -126,6 +130,165 @@ func TestIssueCommand(t *testing.T) {
 		}
 		if !bytes.Equal(resp, tt.out) {
 			t.Errorf("[%d]IssueCommand() => %v, want data = %v",
+				i, resp, tt.out)
+		}
+	}
+}
+
+var IssueCommandNormalTests = []struct {
+	in_cmd         string
+	in_param       string
+	in_dummyData   []byte
+	out_errorIsNil bool
+}{
+	{
+		"HOGE", "HUGA", []byte("OK\r\n"),
+		true,
+	},
+	{
+		"HOGE", "HUGA", []byte("NG\r\n"),
+		false,
+	},
+	{
+		"HOGE", "HUGA", []byte("FUGA\r\n"),
+		false,
+	},
+	{
+		"HOGE", "HUGA", []byte(""),
+		false,
+	},
+	{
+		"HOGE", "HUGA", []byte("\r\n"),
+		false,
+	},
+}
+
+func TestIssueNormalCommand(t *testing.T) {
+	serial := newFakeSerial()
+	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond}
+
+	for i, tt := range IssueCommandNormalTests {
+		serial.dummyData = tt.in_dummyData
+		err := im.IssueCommandNormal(tt.in_cmd, tt.in_param)
+		if (tt.out_errorIsNil && (err != nil)) ||
+			(!tt.out_errorIsNil && (err == nil)) {
+			t.Errorf("[%d]IssueCommandNormal(%v, %v) => %v, want errorIsNil = %v",
+				i, tt.in_cmd, tt.in_param, err, tt.out_errorIsNil)
+		}
+	}
+}
+
+var IssueCommandRespStrTests = []struct {
+	in_cmd         string
+	in_param       string
+	in_dummyData   []byte
+	out            string
+	out_errorIsNil bool
+}{
+	{
+		"HOGE", "HUGA", []byte("OK\r\n"),
+		"OK", true,
+	},
+	{
+		"HOGE", "HUGA", []byte("NG\r\n"),
+		"NG", false,
+	},
+	{
+		"HOGE", "HUGA", []byte("FUGA\r\n"),
+		"FUGA", true,
+	},
+	{
+		"HOGE", "HUGA", []byte("FUGA\r\nFUGA\r\n"),
+		"FUGA\r\nFUGA", true,
+	},
+	{
+		"HOGE", "HUGA", []byte(""),
+		"", false,
+	},
+	{
+		"HOGE", "HUGA", []byte("\r\n"),
+		"", true,
+	},
+}
+
+func TestIssueCommandRespStr(t *testing.T) {
+	serial := newFakeSerial()
+	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond}
+
+	for i, tt := range IssueCommandRespStrTests {
+		serial.dummyData = tt.in_dummyData
+		resp, err := im.IssueCommandRespStr(tt.in_cmd, tt.in_param)
+		if (tt.out_errorIsNil && (err != nil)) ||
+			(!tt.out_errorIsNil && (err == nil)) {
+			t.Errorf("[%d]IssueCommandRespStr(%v, %v) => %v, want errorIsNil = %v",
+				i, tt.in_cmd, tt.in_param, err, tt.out_errorIsNil)
+		}
+		if resp != tt.out {
+			t.Errorf("[%d]IssueCommandRespStr() => %v, want data = %v",
+				i, resp, tt.out)
+		}
+	}
+}
+
+var IssueCommandRespNumTests = []struct {
+	in_cmd         string
+	in_param       string
+	in_dummyData   []byte
+	out            uint16
+	out_errorIsNil bool
+}{
+	{
+		"HOGE", "HUGA", []byte("0\r\n"),
+		0, false,
+	},
+	{
+		"HOGE", "HUGA", []byte("1\r\n"),
+		0, false,
+	},
+	{
+		"HOGE", "HUGA", []byte("10\r\n"),
+		0x0010, true,
+	},
+	{
+		"HOGE", "HUGA", []byte("101\r\n"),
+		0, false,
+	},
+	{
+		"HOGE", "HUGA", []byte("1010\r\n"),
+		0x1010, true,
+	},
+	{
+		"HOGE", "HUGA", []byte("01010\r\n"),
+		0, false,
+	},
+	{
+		"HOGE", "HUGA", []byte("1"),
+		0, false,
+	},
+	{
+		"HOGE", "HUGA", []byte(""),
+		0, false,
+	},
+	{
+		"HOGE", "HUGA", []byte("\r\n"),
+		0, false,
+	},
+}
+
+func TestIssueCommandRespNum(t *testing.T) {
+	serial := newFakeSerial()
+	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond}
+
+	for i, tt := range IssueCommandRespNumTests {
+		serial.dummyData = tt.in_dummyData
+		resp, err := im.IssueCommandRespNum(tt.in_cmd, tt.in_param)
+		if (tt.out_errorIsNil && (err != nil)) ||
+			(!tt.out_errorIsNil && (err == nil)) {
+			t.Errorf("[%d]IssueCommandRespNum(%v, %v) => %v, want errorIsNil = %v",
+				i, tt.in_cmd, tt.in_param, err, tt.out_errorIsNil)
+		}
+		if resp != tt.out {
+			t.Errorf("[%d]IssueCommandRespNum() => %v, want data = %v",
 				i, resp, tt.out)
 		}
 	}
