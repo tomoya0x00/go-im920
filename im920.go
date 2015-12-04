@@ -341,6 +341,25 @@ func (im *IM920) GetAllRcvId() (ids []Id, err error) {
 	return
 }
 
+func (im *IM920) DeleteAllRcvId() error {
+	ierr := im.IssueCommandNormal("ENWR", "")
+	if ierr != nil {
+		return fmt.Errorf("error: ENWR failed: %s", ierr)
+	}
+
+	ierr = im.IssueCommandNormal("ERID", "")
+	if ierr != nil {
+		return fmt.Errorf("error: SRID failed: %s", ierr)
+	}
+
+	ierr = im.IssueCommandNormal("DSWR", "")
+	if ierr != nil {
+		return fmt.Errorf("error: DSWR failed: %s", ierr)
+	}
+
+	return nil
+}
+
 func (im *IM920) Close() error {
 	return im.s.Close()
 }
