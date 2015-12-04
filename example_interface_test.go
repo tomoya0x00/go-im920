@@ -16,7 +16,7 @@ func Example() {
 	}
 	defer im.Close()
 
-	id, err := im.IssueCommandRespNum("RDID", "")
+	id, err := im.GetId()
 	if err != nil {
 		fmt.Printf("Failed to RDID: %s\n", err)
 		return

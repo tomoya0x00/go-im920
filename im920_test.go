@@ -475,3 +475,35 @@ func TestRead(t *testing.T) {
 		}
 	}
 }
+
+var GetIdTests = []struct {
+	in_dummyData   []byte
+	out            Id
+	out_errorIsNil bool
+}{
+	{[]byte("0000\r\n"), 0x0000, true},
+	{[]byte("0001\r\n"), 0x0001, true},
+	{[]byte("ffff\r\n"), 0xffff, true},
+	{[]byte("0000"), 0, false},
+	{[]byte(""), 0, false},
+	{[]byte("\r\n"), 0, false},
+}
+
+func TestGetId(t *testing.T) {
+	serial := newFakeSerial()
+	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond}
+
+	for i, tt := range GetIdTests {
+		serial.dummyData = tt.in_dummyData
+		id, err := im.GetId()
+		if (tt.out_errorIsNil && (err != nil)) ||
+			(!tt.out_errorIsNil && (err == nil)) {
+			t.Errorf("[%d]GetId() => %v, want errorIsNil = %v",
+				i, err, tt.out_errorIsNil)
+		}
+		if id != tt.out {
+			t.Errorf("[%d]GetId() => %v, want data = %v",
+				i, id, tt.out)
+		}
+	}
+}

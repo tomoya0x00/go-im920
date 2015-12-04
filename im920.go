@@ -36,6 +36,8 @@ const (
 	maxReadSize = 256
 )
 
+type Id uint16
+
 func Open(c *Config) (*IM920, error) {
 	t := (1000 * 100 * 8 / defaultBps) * time.Millisecond
 	sc := &serial.Config{Name: c.Name, Baud: defaultBps, ReadTimeout: t}
@@ -287,6 +289,18 @@ func (im *IM920) Read(p []byte) (n int, err error) {
 
 func (im *IM920) LastReadInfo() ReadInfo {
 	return im.lastReadInfo
+}
+
+func (im *IM920) GetId() (id Id, err error) {
+	rcv, ierr := im.IssueCommandRespNum("RDID", "")
+	if ierr != nil {
+		err = fmt.Errorf("error: IssueCommandRespNum failed: %s", ierr)
+		return
+	}
+
+	id = Id(rcv)
+
+	return
 }
 
 func (im *IM920) Close() error {
