@@ -342,7 +342,7 @@ var IssueCommandRespNumsTests = []struct {
 	},
 	{
 		"HOGE", "HUGA", []byte("\r\n"),
-		nil, false,
+		nil, true,
 	},
 }
 
@@ -586,7 +586,7 @@ var GetAllRcvIdTests = []struct {
 	},
 	{
 		[]byte("\r\n"),
-		nil, false,
+		nil, true,
 	},
 }
 

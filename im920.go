@@ -221,10 +221,6 @@ func (im *IM920) IssueCommandRespNums(cmd, param string) (resp []uint16, err err
 		resp = append(resp, val)
 	}
 
-	if len(resp) == 0 {
-		err = fmt.Errorf("error: receive failed: no data")
-	}
-
 	return
 }
 
