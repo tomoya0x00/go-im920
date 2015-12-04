@@ -294,11 +294,35 @@ func (im *IM920) LastReadInfo() ReadInfo {
 func (im *IM920) GetId() (id Id, err error) {
 	rcv, ierr := im.IssueCommandRespNum("RDID", "")
 	if ierr != nil {
-		err = fmt.Errorf("error: IssueCommandRespNum failed: %s", ierr)
+		err = fmt.Errorf("error: RDID failed: %s", ierr)
 		return
 	}
 
 	id = Id(rcv)
+
+	return
+}
+
+func (im *IM920) AddRcvId(id Id) (err error) {
+	ierr := im.IssueCommandNormal("ENWR", "")
+	if ierr != nil {
+		err = fmt.Errorf("error: ENWR failed: %s", ierr)
+		return
+	}
+
+	b := make([]byte, 2)
+	binary.BigEndian.PutUint16(b, uint16(id))
+	ierr = im.IssueCommandNormal("SRID", hex.EncodeToString(b))
+	if ierr != nil {
+		err = fmt.Errorf("error: SRID failed: %s", ierr)
+		return
+	}
+
+	ierr = im.IssueCommandNormal("DSWR", "")
+	if ierr != nil {
+		err = fmt.Errorf("error: DSWR failed: %s", ierr)
+		return
+	}
 
 	return
 }

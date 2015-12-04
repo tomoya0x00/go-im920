@@ -18,10 +18,18 @@ func Example() {
 
 	id, err := im.GetId()
 	if err != nil {
-		fmt.Printf("Failed to RDID: %s\n", err)
+		fmt.Printf("Failed to GetId: %s\n", err)
 		return
 	}
 	fmt.Printf("ID: %v\n", id)
+
+	/*
+	    err = im.AddRcvId(0x0001)
+		if err != nil {
+			fmt.Printf("Failed to AddRcvId: %s\n", err)
+			return
+		}
+	*/
 
 	version, err := im.IssueCommandRespStr("RDVR", "")
 	if err != nil {

@@ -8,7 +8,8 @@ import (
 )
 
 type fakeSerial struct {
-	dummyData []byte
+	dummyData  []byte
+	writedData []byte
 }
 
 func newFakeSerial() *fakeSerial {
@@ -37,6 +38,7 @@ func (serial *fakeSerial) Close() error {
 }
 
 func (serial *fakeSerial) Write(p []byte) (n int, err error) {
+	serial.writedData = p
 	return len(p), nil
 }
 
@@ -507,3 +509,52 @@ func TestGetId(t *testing.T) {
 		}
 	}
 }
+
+/*
+var AddRcvIdTests = []struct {
+    in             Id
+	in_dummyData   []byte
+	out_writedData []byte
+	out_errorIsNil bool
+}{
+	{
+        0x0001, []byte("OK\r\nOK\r\nOK\r\n"),
+        []byte("SRID 0001 \r\n"), true,
+    },
+	{
+        0xffff, []byte("OK\r\nOK\r\nOK\r\n"),
+        []byte("SRID ffff \r\n"), true,
+    },
+    {
+        0x0001, []byte("NG\r\n"),
+        nil, false,
+    },
+    {
+        0x0001, []byte("OK\r\nNG\r\n"),
+        []byte("SRID 0001 \r\n"), false,
+    },
+    {
+        0x0001, []byte("OK\r\nOK\r\nNG\r\n"),
+        []byte("SRID 0001 \r\n"), false,
+    },
+}
+
+func TestAddRcvId(t *testing.T) {
+	serial := newFakeSerial()
+	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond}
+
+	for i, tt := range AddRcvIdTests {
+		serial.dummyData = tt.in_dummyData
+		err := im.AddRcvId(tt.in)
+		if (tt.out_errorIsNil && (err != nil)) ||
+			(!tt.out_errorIsNil && (err == nil)) {
+			t.Errorf("[%d]AddRcvId() => %v, want errorIsNil = %v",
+				i, err, tt.out_errorIsNil)
+		}
+		if !bytes.Equal(serial.writedData, tt.out_writedData) {
+			t.Errorf("[%d]AddRcvId() => %v, want data = %v",
+				i, serial.writedData, tt.out_writedData)
+		}
+	}
+}
+*/
