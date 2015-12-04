@@ -558,3 +558,53 @@ func TestAddRcvId(t *testing.T) {
 	}
 }
 */
+
+var GetAllRcvIdTests = []struct {
+	in_dummyData   []byte
+	out            []Id
+	out_errorIsNil bool
+}{
+	{
+		[]byte("0000\r\n"),
+		[]Id{0x0000}, true,
+	},
+	{
+		[]byte("0000\r\n0001\r\n"),
+		[]Id{0x0000, 0x0001}, true,
+	},
+	{
+		[]byte("0000\r\n0001\r\n0002\r\n"),
+		[]Id{0x0000, 0x0001, 0x0002}, true,
+	},
+	{
+		[]byte("0000"),
+		nil, false,
+	},
+	{
+		[]byte(""),
+		nil, false,
+	},
+	{
+		[]byte("\r\n"),
+		nil, false,
+	},
+}
+
+func TestGetAllRcvId(t *testing.T) {
+	serial := newFakeSerial()
+	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond}
+
+	for i, tt := range GetAllRcvIdTests {
+		serial.dummyData = tt.in_dummyData
+		ids, err := im.GetAllRcvId()
+		if (tt.out_errorIsNil && (err != nil)) ||
+			(!tt.out_errorIsNil && (err == nil)) {
+			t.Errorf("[%d]GetId() => %v, want errorIsNil = %v",
+				i, err, tt.out_errorIsNil)
+		}
+		if !reflect.DeepEqual(ids, tt.out) {
+			t.Errorf("[%d]GetId() => %v, want data = %v",
+				i, ids, tt.out)
+		}
+	}
+}

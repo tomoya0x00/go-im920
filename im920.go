@@ -327,6 +327,20 @@ func (im *IM920) AddRcvId(id Id) (err error) {
 	return
 }
 
+func (im *IM920) GetAllRcvId() (ids []Id, err error) {
+	rcv, ierr := im.IssueCommandRespNums("RRID", "")
+	if ierr != nil {
+		err = fmt.Errorf("error: RRID failed: %s", ierr)
+		return
+	}
+
+	for _, v := range rcv {
+		ids = append(ids, Id(v))
+	}
+
+	return
+}
+
 func (im *IM920) Close() error {
 	return im.s.Close()
 }

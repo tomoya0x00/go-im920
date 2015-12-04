@@ -24,11 +24,11 @@ func Example() {
 	fmt.Printf("ID: %v\n", id)
 
 	/*
-	    err = im.AddRcvId(0x0001)
-		if err != nil {
-			fmt.Printf("Failed to AddRcvId: %s\n", err)
-			return
-		}
+		    err = im.AddRcvId(0x0001)
+			if err != nil {
+				fmt.Printf("Failed to AddRcvId: %s\n", err)
+				return
+			}
 	*/
 
 	version, err := im.IssueCommandRespStr("RDVR", "")
@@ -38,9 +38,9 @@ func Example() {
 	}
 	fmt.Printf("VERSION: %v\n", version)
 
-	rids, err := im.IssueCommandRespNums("RRID", "")
+	rids, err := im.GetAllRcvId()
 	if err != nil {
-		fmt.Printf("Failed to RRID: %s\n", err)
+		fmt.Printf("Failed to GetAllRcvId: %s\n", err)
 		return
 	}
 	fmt.Printf("RIDS: %v\n", rids)
