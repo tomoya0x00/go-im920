@@ -39,11 +39,11 @@ func Example() {
 	fmt.Printf("VERSION: %v\n", version)
 
 	/*
-	    err = im.DeleteAllRcvId()
-		if err != nil {
-			fmt.Printf("Failed to DeleteAllRcvId: %s\n", err)
-			return
-		}
+		    err = im.DeleteAllRcvId()
+			if err != nil {
+				fmt.Printf("Failed to DeleteAllRcvId: %s\n", err)
+				return
+			}
 	*/
 
 	rids, err := im.GetAllRcvId()
