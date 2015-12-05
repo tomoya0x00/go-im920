@@ -429,25 +429,25 @@ var ReadTests = []struct {
 	{
 		[]byte("00,06E5,B5:0A,1F,76,00,00,00,00,00\r\n"),
 		[]byte{0x0A, 0x1F, 0x76, 0x00, 0x00, 0x00, 0x00, 0x00},
-		ReadInfo{Node: 0x00, FromId: 0x06E5, Rssi: 0xb5},
+		ReadInfo{FromNode: 0x00, FromId: 0x06E5, FromRssi: 0xb5},
 		true,
 	},
 	{
 		[]byte("00,06E5,B5:0A,1F,76\r\n"),
 		[]byte{0x0A, 0x1F, 0x76},
-		ReadInfo{Node: 0x00, FromId: 0x06E5, Rssi: 0xb5},
+		ReadInfo{FromNode: 0x00, FromId: 0x06E5, FromRssi: 0xb5},
 		true,
 	},
 	{
 		[]byte("00,06E5,B5:0A\r\n"),
 		[]byte{0x0A},
-		ReadInfo{Node: 0x00, FromId: 0x06E5, Rssi: 0xb5},
+		ReadInfo{FromNode: 0x00, FromId: 0x06E5, FromRssi: 0xb5},
 		true,
 	},
 	{
 		[]byte("01,06E6,B6:0A\r\n"),
 		[]byte{0x0A},
-		ReadInfo{Node: 0x01, FromId: 0x06E6, Rssi: 0xb6},
+		ReadInfo{FromNode: 0x01, FromId: 0x06E6, FromRssi: 0xb6},
 		true,
 	},
 }

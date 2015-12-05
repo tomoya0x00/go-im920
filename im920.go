@@ -13,15 +13,20 @@ import (
 	"github.com/tarm/serial"
 )
 
+type Id uint16
+type Ch uint8
+type Rssi uint8
+type Node uint8
+
 type Config struct {
 	Name        string
 	ReadTimeout time.Duration
 }
 
 type ReadInfo struct {
-	Node   uint8
-	FromId uint16
-	Rssi   uint8
+	FromNode Node
+	FromId   Id
+	FromRssi Rssi
 }
 
 type IM920 struct {
@@ -35,9 +40,6 @@ const (
 	maxTXDA     = 64
 	maxReadSize = 256
 )
-
-type Id uint16
-type Ch uint8
 
 func Open(c *Config) (*IM920, error) {
 	t := (1000 * 100 * 8 / defaultBps) * time.Millisecond
@@ -82,20 +84,21 @@ func parseReadHeaders(s string) (info ReadInfo, err error) {
 		err = fmt.Errorf("error: Decode Node failed (%s): %s", headers[0], derr)
 		return
 	}
-	info.Node = uint8(node[0])
+	info.FromNode = Node(node[0])
 
-	info.FromId, derr = strToUint16(headers[1])
+	id, derr := strToUint16(headers[1])
 	if err != nil {
 		err = fmt.Errorf("error: Decode FromId failed (%s): %s", headers[1], derr)
 		return
 	}
+	info.FromId = Id(id)
 
 	rssi, derr := hex.DecodeString(headers[2])
 	if err != nil {
 		err = fmt.Errorf("error: Decode Rssi failed (%s): %s", headers[2], derr)
 		return
 	}
-	info.Rssi = uint8(rssi[0])
+	info.FromRssi = Rssi(rssi[0])
 
 	return
 }
