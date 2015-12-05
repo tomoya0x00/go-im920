@@ -53,6 +53,21 @@ func Example() {
 	}
 	fmt.Printf("RIDS: %v\n", rids)
 
+	/*
+	   err = im.SetCh(2, false)
+	   if err != nil {
+	       fmt.Printf("Failed to SetCh: %s\n", err)
+	       return
+	   }
+	*/
+
+	ch, err := im.GetCh()
+	if err != nil {
+		fmt.Printf("Failed to GetCh: %s\n", err)
+		return
+	}
+	fmt.Printf("CH: %v\n", ch)
+
 	data := []byte("0123456789")
 	_, err = im.Write(data)
 	if err != nil {

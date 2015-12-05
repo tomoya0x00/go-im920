@@ -37,6 +37,7 @@ const (
 )
 
 type Id uint16
+type Ch uint8
 
 func Open(c *Config) (*IM920, error) {
 	t := (1000 * 100 * 8 / defaultBps) * time.Millisecond
@@ -345,7 +346,7 @@ func (im *IM920) DeleteAllRcvId() error {
 
 	ierr = im.IssueCommandNormal("ERID", "")
 	if ierr != nil {
-		return fmt.Errorf("error: SRID failed: %s", ierr)
+		return fmt.Errorf("error: ERID failed: %s", ierr)
 	}
 
 	ierr = im.IssueCommandNormal("DSWR", "")
@@ -354,6 +355,46 @@ func (im *IM920) DeleteAllRcvId() error {
 	}
 
 	return nil
+}
+
+func (im *IM920) SetCh(ch Ch, persist bool) (err error) {
+	if persist {
+		ierr := im.IssueCommandNormal("ENWR", "")
+		if ierr != nil {
+			err = fmt.Errorf("error: ENWR failed: %s", ierr)
+			return
+		}
+	}
+
+	b := make([]byte, 1)
+	b[0] = byte(ch)
+	ierr := im.IssueCommandNormal("STCH", hex.EncodeToString(b))
+	if ierr != nil {
+		err = fmt.Errorf("error: STCH failed: %s", ierr)
+		return
+	}
+
+	if persist {
+		ierr := im.IssueCommandNormal("DSWR", "")
+		if ierr != nil {
+			err = fmt.Errorf("error: DSWR failed: %s", ierr)
+			return
+		}
+	}
+
+	return
+}
+
+func (im *IM920) GetCh() (ch Ch, err error) {
+	rcv, ierr := im.IssueCommandRespNum("RDCH", "")
+	if ierr != nil {
+		err = fmt.Errorf("error: RDCH failed: %s", ierr)
+		return
+	}
+
+	ch = Ch(rcv)
+
+	return
 }
 
 func (im *IM920) Close() error {
