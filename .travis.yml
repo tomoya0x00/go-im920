@@ -3,8 +3,16 @@ go:
   - 1.5
   - tip
 sudo: false
-install:
+before_install:
   - go get github.com/tarm/serial
+  - go get github.com/axw/gocov/gocov
+  - go get github.com/mattn/goveralls
+  - if ! go get code.google.com/p/go.tools/cmd/cover; then go get golang.org/x/tools/cmd/cover; fi
+script:
+    - $HOME/gopath/bin/goveralls -repotoken $COVERALLS_TOKEN
 branches:
   only:
   - master
+env:
+  global:
+    secure: "UpFBVU2kbPy2gph/YN7wcay2c5nkp1vbxXvgoFOTDT+6Gv9HGC4xhAikKll4YpLylgtzJJd6McoJhCPK20ZNmtvgsucAtvadVS1IZC4JGw0JEb5JeQA6cqjVANyvBX+33LJU2dHBrVDKON4GimoKzqIUF/5xMb2F3pWPMOnMeturxR3NGPUxp41uTiua4K2Us+0/WWpIwAExKy68ryaZ7kZOe5MB9LbRiPAhyXVIma0KHf60XnrVq1LOZJNYFhDlKhJ1K99VG02/fhQdx8lrjP2fKtd1egOrKYpbMfII5rB3GYQ6fSlq32Naoi3eETOnobeHmWrVzKcRPueVSfTLfLL9T33qBgbqAgtLcV+WpZ3oZAPk5Ao7tLoww0l+CfHfArSON6/dl+Ie2JmnmgWIxLasXaDQ8tf4qvJvVpXpx6VrneHR9Ko/dRCGMb/og0yxC68yjQZzQm3344WQF4ngeREf9TsVXAcqCIQweOaHspkaU2tjlrtTWa7js342tJe35QzihgYq4GjuXKpJU73VmGThZeJh9R01smLeLHIqH0Yu5H+5vJLai/pb/inlDghylbQURXHq1YGCiljSCLKVSLmK1Wx3NqmF01ZgNxPTYEIgHsIbCQ2xlQQP1dZ9Y3tsws3GtwzbecFJCbuE3SzumZgeJo+27Y2y/a3gre3Indk="
