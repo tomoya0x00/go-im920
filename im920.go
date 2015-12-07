@@ -20,9 +20,10 @@ type Node uint8
 type Mode uint8
 
 const (
-    FAST_MODE Mode = iota + 1
-    LONG_MODE
+	FAST_MODE Mode = iota + 1
+	LONG_MODE
 )
+
 type Config struct {
 	Name        string
 	ReadTimeout time.Duration
@@ -58,9 +59,13 @@ func Open(c *Config) (*IM920, error) {
 }
 
 func strToUint16(s string) (val uint16, err error) {
+	if len(s)%2 == 1 {
+		s = "0" + s
+	}
+
 	b, derr := hex.DecodeString(s)
 	if derr != nil {
-        err = fmt.Errorf("error: Decode failed: %s (%s)", derr, b)
+		err = fmt.Errorf("error: Decode failed: %s (%s)", derr, b)
 		return
 	}
 
@@ -442,6 +447,18 @@ func (im *IM920) SetCommMode(mode Mode, persist bool) (err error) {
 			return
 		}
 	}
+
+	return
+}
+
+func (im *IM920) GetCommMode() (mode Mode, err error) {
+	rcv, ierr := im.IssueCommandRespNum("RDRT", "")
+	if ierr != nil {
+		err = fmt.Errorf("error: RDRT failed: %s", ierr)
+		return
+	}
+
+	mode = Mode(rcv)
 
 	return
 }

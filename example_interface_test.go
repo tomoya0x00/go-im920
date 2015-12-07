@@ -75,12 +75,19 @@ func Example() {
 	}
 	fmt.Printf("RSSI: %v\n", rssi)
 
-    err = im.SetCommMode(im920.LONG_MODE, false)
-    if err != nil {
-        fmt.Printf("Failed to SetCommMode: %s\n", err)
-        return
-    }
-    
+	err = im.SetCommMode(im920.LONG_MODE, false)
+	if err != nil {
+		fmt.Printf("Failed to SetCommMode: %s\n", err)
+		return
+	}
+
+	mode, err := im.GetCommMode()
+	if err != nil {
+		fmt.Printf("Failed to GetCommMode: %s\n", err)
+		return
+	}
+	fmt.Printf("MODE: %v\n", mode)
+
 	data := []byte("0123456789")
 	_, err = im.Write(data)
 	if err != nil {

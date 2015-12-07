@@ -242,11 +242,11 @@ var IssueCommandRespNumTests = []struct {
 }{
 	{
 		"HOGE", "HUGA", []byte("0\r\n"),
-		0, false,
+		0x0000, true,
 	},
 	{
 		"HOGE", "HUGA", []byte("1\r\n"),
-		0, false,
+		0x0001, true,
 	},
 	{
 		"HOGE", "HUGA", []byte("10\r\n"),
@@ -254,7 +254,7 @@ var IssueCommandRespNumTests = []struct {
 	},
 	{
 		"HOGE", "HUGA", []byte("101\r\n"),
-		0, false,
+		0x0101, true,
 	},
 	{
 		"HOGE", "HUGA", []byte("1010\r\n"),
@@ -306,11 +306,11 @@ var IssueCommandRespNumsTests = []struct {
 }{
 	{
 		"HOGE", "HUGA", []byte("0\r\n"),
-		nil, false,
+		[]uint16{0x0000}, true,
 	},
 	{
 		"HOGE", "HUGA", []byte("1\r\n"),
-		nil, false,
+		[]uint16{0x0001}, true,
 	},
 	{
 		"HOGE", "HUGA", []byte("10\r\n"),
@@ -318,7 +318,7 @@ var IssueCommandRespNumsTests = []struct {
 	},
 	{
 		"HOGE", "HUGA", []byte("101\r\n"),
-		nil, false,
+		[]uint16{0x0101}, true,
 	},
 	{
 		"HOGE", "HUGA", []byte("1010\r\n"),
