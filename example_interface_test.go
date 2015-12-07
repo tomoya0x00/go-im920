@@ -68,6 +68,19 @@ func Example() {
 	}
 	fmt.Printf("CH: %v\n", ch)
 
+	rssi, err := im.GetRssi()
+	if err != nil {
+		fmt.Printf("Failed to GetRssi: %s\n", err)
+		return
+	}
+	fmt.Printf("RSSI: %v\n", rssi)
+
+    err = im.SetCommMode(im920.LONG_MODE, false)
+    if err != nil {
+        fmt.Printf("Failed to SetCommMode: %s\n", err)
+        return
+    }
+    
 	data := []byte("0123456789")
 	_, err = im.Write(data)
 	if err != nil {

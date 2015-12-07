@@ -17,7 +17,12 @@ type Id uint16
 type Ch uint8
 type Rssi uint8
 type Node uint8
+type Mode uint8
 
+const (
+    FAST_MODE Mode = iota + 1
+    LONG_MODE
+)
 type Config struct {
 	Name        string
 	ReadTimeout time.Duration
@@ -53,8 +58,9 @@ func Open(c *Config) (*IM920, error) {
 }
 
 func strToUint16(s string) (val uint16, err error) {
-	b, err := hex.DecodeString(s)
-	if err != nil {
+	b, derr := hex.DecodeString(s)
+	if derr != nil {
+        err = fmt.Errorf("error: Decode failed: %s (%s)", derr, b)
 		return
 	}
 
@@ -396,6 +402,46 @@ func (im *IM920) GetCh() (ch Ch, err error) {
 	}
 
 	ch = Ch(rcv)
+
+	return
+}
+
+func (im *IM920) GetRssi() (rssi Rssi, err error) {
+	rcv, ierr := im.IssueCommandRespNum("RDRS", "")
+	if ierr != nil {
+		err = fmt.Errorf("error: RDRS failed: %s", ierr)
+		return
+	}
+
+	rssi = Rssi(rcv)
+
+	return
+}
+
+func (im *IM920) SetCommMode(mode Mode, persist bool) (err error) {
+	if persist {
+		ierr := im.IssueCommandNormal("ENWR", "")
+		if ierr != nil {
+			err = fmt.Errorf("error: ENWR failed: %s", ierr)
+			return
+		}
+	}
+
+	b := make([]byte, 1)
+	b[0] = byte(mode)
+	ierr := im.IssueCommandNormal("STRT", hex.EncodeToString(b))
+	if ierr != nil {
+		err = fmt.Errorf("error: STRT failed: %s", ierr)
+		return
+	}
+
+	if persist {
+		ierr := im.IssueCommandNormal("DSWR", "")
+		if ierr != nil {
+			err = fmt.Errorf("error: DSWR failed: %s", ierr)
+			return
+		}
+	}
 
 	return
 }
