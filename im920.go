@@ -151,8 +151,7 @@ func (im *IM920) receive(p []byte) (readed int, err error) {
 
 func (im *IM920) IssueCommand(cmd, param string) (resp []byte, err error) {
 	// TODO: BUSY WAIT
-	s := []string{cmd, param, "\r\n"}
-	_, werr := im.s.Write([]byte(strings.Join(s, " ")))
+	_, werr := im.s.Write([]byte(cmd + " " + param + "\r\n"))
 	if werr != nil {
 		err = fmt.Errorf("error: Write failed: %s", werr)
 		return
