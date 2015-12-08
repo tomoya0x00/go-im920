@@ -149,6 +149,31 @@ func (im *IM920) receive(p []byte) (readed int, err error) {
 
 }
 
+func (im *IM920) getResponse(p []byte) (readed int, err error) {
+	rcv := make([]byte, maxReadSize)
+	rcved, rerr := im.receive(rcv)
+	if rerr != nil {
+		err = fmt.Errorf("error: receive failed: %s", rerr)
+		return
+	}
+	if rcved == 0 {
+		err = fmt.Errorf("error: receive failed: no data")
+		return
+	}
+
+	strs := strings.Split(string(rcv[:rcved]), "\r\n")
+
+	for i, v := range strs {
+		if !strings.Contains(v, ":") {
+			resp := strings.Join(strs[i:], "\r\n")
+			readed = copy(p, resp)
+			break
+		}
+	}
+
+	return
+}
+
 func (im *IM920) IssueCommand(cmd, param string) (resp []byte, err error) {
 	// TODO: BUSY WAIT
 	_, werr := im.s.Write([]byte(cmd + " " + param + "\r\n"))
@@ -159,13 +184,13 @@ func (im *IM920) IssueCommand(cmd, param string) (resp []byte, err error) {
 
 	// TODO: BUSY WAIT
 	rcv := make([]byte, maxReadSize)
-	rcved, rerr := im.receive(rcv)
+	rcved, rerr := im.getResponse(rcv)
 	if rerr != nil {
-		err = fmt.Errorf("error: receive failed: %s", rerr)
+		err = fmt.Errorf("error: getResponse failed: %s", rerr)
 		return
 	}
 	if rcved == 0 {
-		err = fmt.Errorf("error: receive failed: no data")
+		err = fmt.Errorf("error: getResponse failed: no data")
 		return
 	}
 

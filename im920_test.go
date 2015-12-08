@@ -117,6 +117,22 @@ var IssueCommandTests = []struct {
 		"HOGE", "HUGA", []byte("\r\n"),
 		[]byte("\r\n"), true,
 	},
+	{
+		"HOGE", "HUGA", []byte("00,06E5,B5:0A\r\nOK\r\n"),
+		[]byte("OK\r\n"), true,
+	},
+	{
+		"HOGE", "HUGA", []byte("00,06E5,B5:0A\r\n00,06E5,B5:0B\r\nOK\r\n"),
+		[]byte("OK\r\n"), true,
+	},
+	{
+		"HOGE", "HUGA", []byte("00,06E5,B5:0A\r\n00,06E5,B5:0B\r\nOK"),
+		[]byte("OK"), true,
+	},
+	{
+		"HOGE", "HUGA", []byte("00,06E5,B5:0B\r\nNG\r\n"),
+		[]byte("NG\r\n"), false,
+	},
 }
 
 func TestIssueCommand(t *testing.T) {
