@@ -3,6 +3,7 @@ package im920
 import (
 	"bufio"
 	"bytes"
+	"container/list"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
@@ -39,6 +40,7 @@ type IM920 struct {
 	s            io.ReadWriteCloser
 	readTimeout  time.Duration
 	lastReadInfo ReadInfo
+	rcvedData    *list.List
 }
 
 const (
@@ -55,7 +57,7 @@ func Open(c *Config) (*IM920, error) {
 		return &IM920{}, fmt.Errorf("error: OpenPort failed: %s", err)
 	}
 
-	return &IM920{s: s, readTimeout: c.ReadTimeout}, nil
+	return &IM920{s: s, readTimeout: c.ReadTimeout, rcvedData: list.New()}, nil
 }
 
 func strToUint16(s string) (val uint16, err error) {
@@ -168,6 +170,13 @@ func (im *IM920) getResponse(p []byte) (readed int, err error) {
 			resp := strings.Join(strs[i:], "\r\n")
 			readed = copy(p, resp)
 			break
+		}
+
+		if len(v) > 0 {
+			if i+1 < len(strs) {
+				v += "\r\n"
+			}
+			im.rcvedData.PushBack(v)
 		}
 	}
 
@@ -282,19 +291,26 @@ func (im *IM920) Write(p []byte) (n int, err error) {
 }
 
 func (im *IM920) Read(p []byte) (n int, err error) {
-	buf := make([]byte, maxReadSize)
-
-	readed, err := im.receive(buf)
-	if err != nil {
-		return 0, fmt.Errorf("error: Read failed: %s", err)
+	str := ""
+	if im.rcvedData.Len() > 0 {
+		e := im.rcvedData.Front()
+		str = e.Value.(string)
+		im.rcvedData.Remove(e)
+	} else {
+		buf := make([]byte, maxReadSize)
+		readed, err := im.receive(buf)
+		if err != nil {
+			return 0, fmt.Errorf("error: Read failed: %s", err)
+		}
+		if readed == 0 {
+			return 0, fmt.Errorf("error: Read failed: no data")
+		}
+		str = string(buf)
 	}
-	if readed == 0 {
-		return 0, fmt.Errorf("error: Read failed: no data")
-	}
 
-	strs := strings.Split(string(buf), ":")
+	strs := strings.Split(str, ":")
 	if len(strs) < 2 {
-		return 0, fmt.Errorf("error: Split header and data failed (%s)", string(buf))
+		return 0, fmt.Errorf("error: Split header and data failed (%s)", str)
 	}
 
 	info, err := parseReadHeaders(strs[0])

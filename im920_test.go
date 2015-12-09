@@ -2,6 +2,7 @@ package im920
 
 import (
 	"bytes"
+	"container/list"
 	"reflect"
 	"testing"
 	"time"
@@ -71,7 +72,7 @@ var ReceiveTests = []struct {
 
 func TestReceive(t *testing.T) {
 	serial := newFakeSerial()
-	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond}
+	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
 
 	buf := make([]byte, maxReadSize)
 
@@ -95,51 +96,52 @@ var IssueCommandTests = []struct {
 	in_param       string
 	in_dummyData   []byte
 	out            []byte
+	out_rcvedData  []string
 	out_errorIsNil bool
 }{
 	{
 		"HOGE", "HUGA", []byte("OK\r\n"),
-		[]byte("OK\r\n"), true,
+		[]byte("OK\r\n"), nil, true,
 	},
 	{
 		"HOGE", "HUGA", []byte("NG\r\n"),
-		[]byte("NG\r\n"), false,
+		[]byte("NG\r\n"), nil, false,
 	},
 	{
 		"HOGE", "HUGA", []byte("FUGA\r\n"),
-		[]byte("FUGA\r\n"), true,
+		[]byte("FUGA\r\n"), nil, true,
 	},
 	{
 		"HOGE", "HUGA", []byte(""),
-		[]byte(""), false,
+		[]byte(""), nil, false,
 	},
 	{
 		"HOGE", "HUGA", []byte("\r\n"),
-		[]byte("\r\n"), true,
+		[]byte("\r\n"), nil, true,
 	},
 	{
 		"HOGE", "HUGA", []byte("00,06E5,B5:0A\r\nOK\r\n"),
-		[]byte("OK\r\n"), true,
+		[]byte("OK\r\n"), []string{"00,06E5,B5:0A\r\n"}, true,
 	},
 	{
 		"HOGE", "HUGA", []byte("00,06E5,B5:0A\r\n00,06E5,B5:0B\r\nOK\r\n"),
-		[]byte("OK\r\n"), true,
+		[]byte("OK\r\n"), []string{"00,06E5,B5:0A\r\n", "00,06E5,B5:0B\r\n"}, true,
 	},
 	{
 		"HOGE", "HUGA", []byte("00,06E5,B5:0A\r\n00,06E5,B5:0B\r\nOK"),
-		[]byte("OK"), true,
+		[]byte("OK"), []string{"00,06E5,B5:0A\r\n", "00,06E5,B5:0B\r\n"}, true,
 	},
 	{
 		"HOGE", "HUGA", []byte("00,06E5,B5:0B\r\nNG\r\n"),
-		[]byte("NG\r\n"), false,
+		[]byte("NG\r\n"), []string{"00,06E5,B5:0B\r\n"}, false,
 	},
 }
 
 func TestIssueCommand(t *testing.T) {
 	serial := newFakeSerial()
-	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond}
 
 	for i, tt := range IssueCommandTests {
+		im := &IM920{s: serial, readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
 		serial.dummyData = tt.in_dummyData
 		resp, err := im.IssueCommand(tt.in_cmd, tt.in_param)
 		if (tt.out_errorIsNil && (err != nil)) ||
@@ -150,6 +152,18 @@ func TestIssueCommand(t *testing.T) {
 		if !bytes.Equal(resp, tt.out) {
 			t.Errorf("[%d]IssueCommand() => %v, want data = %v",
 				i, resp, tt.out)
+		}
+		if im.rcvedData.Len() != len(tt.out_rcvedData) {
+			t.Errorf("[%d]IssueCommand() => %v, want len = %v",
+				i, im.rcvedData.Len(), len(tt.out_rcvedData))
+		}
+		j := 0
+		for e := im.rcvedData.Front(); e != nil; e = e.Next() {
+			if e.Value != tt.out_rcvedData[j] {
+				t.Errorf("[%d]IssueCommand() => %v, want out_rcvedData = %v",
+					i, e, tt.out_rcvedData[j])
+			}
+			j++
 		}
 	}
 }
@@ -184,7 +198,7 @@ var IssueCommandNormalTests = []struct {
 
 func TestIssueNormalCommand(t *testing.T) {
 	serial := newFakeSerial()
-	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond}
+	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
 
 	for i, tt := range IssueCommandNormalTests {
 		serial.dummyData = tt.in_dummyData
@@ -232,7 +246,7 @@ var IssueCommandRespStrTests = []struct {
 
 func TestIssueCommandRespStr(t *testing.T) {
 	serial := newFakeSerial()
-	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond}
+	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
 
 	for i, tt := range IssueCommandRespStrTests {
 		serial.dummyData = tt.in_dummyData
@@ -296,7 +310,7 @@ var IssueCommandRespNumTests = []struct {
 
 func TestIssueCommandRespNum(t *testing.T) {
 	serial := newFakeSerial()
-	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond}
+	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
 
 	for i, tt := range IssueCommandRespNumTests {
 		serial.dummyData = tt.in_dummyData
@@ -364,7 +378,7 @@ var IssueCommandRespNumsTests = []struct {
 
 func TestIssueCommandRespNums(t *testing.T) {
 	serial := newFakeSerial()
-	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond}
+	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
 
 	for i, tt := range IssueCommandRespNumsTests {
 		serial.dummyData = tt.in_dummyData
@@ -398,7 +412,7 @@ var WriteTests = []struct {
 
 func TestWrite(t *testing.T) {
 	serial := newFakeSerial()
-	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond}
+	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
 
 	for i, tt := range WriteTests {
 		serial.dummyData = tt.in_dummyData
@@ -414,54 +428,77 @@ func TestWrite(t *testing.T) {
 
 var ReadTests = []struct {
 	in             []byte
+	in_rcvedData   []string
 	out            []byte
 	out_readInfo   ReadInfo
 	out_errorIsNil bool
 }{
 	{
 		[]byte("00,06E5,B5:0A,1F,76"),
+		nil,
+		[]byte{},
+		ReadInfo{},
+		false,
+	},
+	{
+		nil,
+		[]string{"00,06E5,B5:0A,1F,76"},
 		[]byte{},
 		ReadInfo{},
 		false,
 	},
 	{
 		[]byte("00,06E5,B5:\r\n"),
+		nil,
 		[]byte{},
 		ReadInfo{},
 		false,
 	},
 	{
 		[]byte("00,06E5,B5\r\n"),
+		nil,
 		[]byte{},
 		ReadInfo{},
 		false,
 	},
 	{
 		[]byte(""),
+		nil,
 		[]byte{},
 		ReadInfo{},
 		false,
 	},
 	{
 		[]byte("00,06E5,B5:0A,1F,76,00,00,00,00,00\r\n"),
+		nil,
+		[]byte{0x0A, 0x1F, 0x76, 0x00, 0x00, 0x00, 0x00, 0x00},
+		ReadInfo{FromNode: 0x00, FromId: 0x06E5, FromRssi: 0xb5},
+		true,
+	},
+	{
+		nil,
+		[]string{"00,06E5,B5:0A,1F,76,00,00,00,00,00\r\n"},
 		[]byte{0x0A, 0x1F, 0x76, 0x00, 0x00, 0x00, 0x00, 0x00},
 		ReadInfo{FromNode: 0x00, FromId: 0x06E5, FromRssi: 0xb5},
 		true,
 	},
 	{
 		[]byte("00,06E5,B5:0A,1F,76\r\n"),
+		nil,
 		[]byte{0x0A, 0x1F, 0x76},
 		ReadInfo{FromNode: 0x00, FromId: 0x06E5, FromRssi: 0xb5},
 		true,
 	},
 	{
 		[]byte("00,06E5,B5:0A\r\n"),
+		nil,
 		[]byte{0x0A},
 		ReadInfo{FromNode: 0x00, FromId: 0x06E5, FromRssi: 0xb5},
 		true,
 	},
 	{
 		[]byte("01,06E6,B6:0A\r\n"),
+		nil,
 		[]byte{0x0A},
 		ReadInfo{FromNode: 0x01, FromId: 0x06E6, FromRssi: 0xb6},
 		true,
@@ -470,12 +507,14 @@ var ReadTests = []struct {
 
 func TestRead(t *testing.T) {
 	serial := newFakeSerial()
-	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond}
-
-	buf := make([]byte, maxReadSize)
 
 	for i, tt := range ReadTests {
+		im := &IM920{s: serial, readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
+		buf := make([]byte, maxReadSize)
 		serial.dummyData = tt.in
+		for _, v := range tt.in_rcvedData {
+			im.rcvedData.PushBack(v)
+		}
 		n, err := im.Read(buf)
 		if (tt.out_errorIsNil && (err != nil)) ||
 			(!tt.out_errorIsNil && (err == nil)) {
@@ -486,6 +525,12 @@ func TestRead(t *testing.T) {
 			t.Errorf("[%d]Read() => %v, want data = %v",
 				i, buf, tt.out)
 		}
+		if len(tt.in_rcvedData) != 0 &&
+			im.rcvedData.Len() != len(tt.in_rcvedData)-1 {
+			t.Errorf("[%d]Read() => %v, want len = %v",
+				i, im.rcvedData.Len(), len(tt.in_rcvedData)-1)
+		}
+
 		info := im.LastReadInfo()
 		if info != tt.out_readInfo {
 			t.Errorf("[%d]LastReadInfo() => %v, want data = %v",
@@ -509,7 +554,7 @@ var GetIdTests = []struct {
 
 func TestGetId(t *testing.T) {
 	serial := newFakeSerial()
-	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond}
+	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
 
 	for i, tt := range GetIdTests {
 		serial.dummyData = tt.in_dummyData
@@ -557,7 +602,7 @@ var AddRcvIdTests = []struct {
 
 func TestAddRcvId(t *testing.T) {
 	serial := newFakeSerial()
-	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond}
+	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
 
 	for i, tt := range AddRcvIdTests {
 		serial.dummyData = tt.in_dummyData
@@ -608,7 +653,7 @@ var GetAllRcvIdTests = []struct {
 
 func TestGetAllRcvId(t *testing.T) {
 	serial := newFakeSerial()
-	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond}
+	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
 
 	for i, tt := range GetAllRcvIdTests {
 		serial.dummyData = tt.in_dummyData
