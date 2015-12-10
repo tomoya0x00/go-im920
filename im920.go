@@ -116,7 +116,7 @@ func parseReadHeaders(s string) (info ReadInfo, err error) {
 	return
 }
 
-func (im *IM920) CheckBusyFunc(func() bool) {
+func (im *IM920) IsBusyFunc(func() bool) {
 	return
 }
 
