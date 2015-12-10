@@ -116,6 +116,10 @@ func parseReadHeaders(s string) (info ReadInfo, err error) {
 	return
 }
 
+func (im *IM920) CheckBusyFunc(func() bool) {
+	return
+}
+
 func (im *IM920) receive(p []byte) (readed int, err error) {
 	timer := time.NewTimer(im.readTimeout)
 	defer timer.Stop()
