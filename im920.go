@@ -41,12 +41,15 @@ type IM920 struct {
 	readTimeout  time.Duration
 	lastReadInfo ReadInfo
 	rcvedData    *list.List
+	isBusyFunc   func() bool
 }
 
 const (
-	defaultBps  = 19200
-	maxTXDA     = 64
-	maxReadSize = 256
+	defaultBps       = 19200
+	maxTXDA          = 64
+	maxReadSize      = 256
+	waitBusyTimeout  = 500 * time.Millisecond
+	waitBusyInterval = 10 * time.Millisecond
 )
 
 func Open(c *Config) (*IM920, error) {
@@ -116,8 +119,33 @@ func parseReadHeaders(s string) (info ReadInfo, err error) {
 	return
 }
 
-func (im *IM920) IsBusyFunc(func() bool) {
+func (im *IM920) IsBusyFunc(f func() bool) {
+	im.isBusyFunc = f
+
 	return
+}
+
+func (im *IM920) waitNotBusy() bool {
+	if im.isBusyFunc == nil {
+		return true
+	}
+
+	timer := time.NewTimer(waitBusyTimeout)
+	defer timer.Stop()
+
+	for {
+		select {
+		case <-timer.C:
+			return false
+		default:
+			if !im.isBusyFunc() {
+				return true
+			}
+			time.Sleep(waitBusyInterval)
+		}
+	}
+
+	return false
 }
 
 func (im *IM920) receive(p []byte) (readed int, err error) {
@@ -152,7 +180,6 @@ func (im *IM920) receive(p []byte) (readed int, err error) {
 			}
 		}
 	}
-
 }
 
 func (im *IM920) getResponse(p []byte) (readed int, err error) {
@@ -188,14 +215,17 @@ func (im *IM920) getResponse(p []byte) (readed int, err error) {
 }
 
 func (im *IM920) IssueCommand(cmd, param string) (resp []byte, err error) {
-	// TODO: BUSY WAIT
+	if !im.waitNotBusy() {
+		err = fmt.Errorf("error: BusyWait failed")
+		return
+	}
+
 	_, werr := im.s.Write([]byte(cmd + " " + param + "\r\n"))
 	if werr != nil {
 		err = fmt.Errorf("error: Write failed: %s", werr)
 		return
 	}
 
-	// TODO: BUSY WAIT
 	rcv := make([]byte, maxReadSize)
 	rcved, rerr := im.getResponse(rcv)
 	if rerr != nil {
