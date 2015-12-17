@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+    "sync"
 	"time"
 
 	"github.com/tarm/serial"
@@ -38,6 +39,7 @@ type ReadInfo struct {
 
 type IM920 struct {
 	s            io.ReadWriteCloser
+    m            *sync.Mutex
 	readTimeout  time.Duration
 	lastReadInfo ReadInfo
 	rcvedData    *list.List
@@ -60,7 +62,7 @@ func Open(c *Config) (*IM920, error) {
 		return &IM920{}, fmt.Errorf("error: OpenPort failed: %s", err)
 	}
 
-	return &IM920{s: s, readTimeout: c.ReadTimeout, rcvedData: list.New()}, nil
+	return &IM920{s: s, m: new(sync.Mutex), readTimeout: c.ReadTimeout, rcvedData: list.New()}, nil
 }
 
 func strToUint16(s string) (val uint16, err error) {
@@ -215,6 +217,9 @@ func (im *IM920) getResponse(p []byte) (readed int, err error) {
 }
 
 func (im *IM920) IssueCommand(cmd, param string) (resp []byte, err error) {
+    im.m.Lock()
+    defer im.m.Unlock()
+    
 	if !im.waitNotBusy() {
 		err = fmt.Errorf("error: BusyWait failed")
 		return
@@ -325,6 +330,9 @@ func (im *IM920) Write(p []byte) (n int, err error) {
 }
 
 func (im *IM920) Read(p []byte) (n int, err error) {
+    im.m.Lock()
+    defer im.m.Unlock()
+    
 	str := ""
 	if im.rcvedData.Len() > 0 {
 		e := im.rcvedData.Front()
