@@ -163,7 +163,7 @@ func (im *IM920) receive(p []byte) (readed int, err error) {
 			return
 		default:
 			n, rerr := im.s.Read(p[readed : readed+1])
-			if rerr != nil {
+			if rerr != nil && rerr != io.EOF {
 				err = fmt.Errorf("error: Read failed: %s", rerr)
 				return
 			}
