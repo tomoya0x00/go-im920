@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"container/list"
 	"reflect"
+	"sync"
 	"testing"
 	"time"
 )
@@ -72,7 +73,7 @@ var ReceiveTests = []struct {
 
 func TestReceive(t *testing.T) {
 	serial := newFakeSerial()
-	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
+	im := &IM920{s: serial, m: new(sync.Mutex), readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
 
 	buf := make([]byte, maxReadSize)
 
@@ -141,7 +142,7 @@ func TestIssueCommand(t *testing.T) {
 	serial := newFakeSerial()
 
 	for i, tt := range IssueCommandTests {
-		im := &IM920{s: serial, readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
+		im := &IM920{s: serial, m: new(sync.Mutex), readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
 		serial.dummyData = tt.in_dummyData
 		resp, err := im.IssueCommand(tt.in_cmd, tt.in_param)
 		if (tt.out_errorIsNil && (err != nil)) ||
@@ -198,7 +199,7 @@ var IssueCommandNormalTests = []struct {
 
 func TestIssueNormalCommand(t *testing.T) {
 	serial := newFakeSerial()
-	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
+	im := &IM920{s: serial, m: new(sync.Mutex), readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
 
 	for i, tt := range IssueCommandNormalTests {
 		serial.dummyData = tt.in_dummyData
@@ -246,7 +247,7 @@ var IssueCommandRespStrTests = []struct {
 
 func TestIssueCommandRespStr(t *testing.T) {
 	serial := newFakeSerial()
-	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
+	im := &IM920{s: serial, m: new(sync.Mutex), readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
 
 	for i, tt := range IssueCommandRespStrTests {
 		serial.dummyData = tt.in_dummyData
@@ -310,7 +311,7 @@ var IssueCommandRespNumTests = []struct {
 
 func TestIssueCommandRespNum(t *testing.T) {
 	serial := newFakeSerial()
-	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
+	im := &IM920{s: serial, m: new(sync.Mutex), readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
 
 	for i, tt := range IssueCommandRespNumTests {
 		serial.dummyData = tt.in_dummyData
@@ -378,7 +379,7 @@ var IssueCommandRespNumsTests = []struct {
 
 func TestIssueCommandRespNums(t *testing.T) {
 	serial := newFakeSerial()
-	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
+	im := &IM920{s: serial, m: new(sync.Mutex), readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
 
 	for i, tt := range IssueCommandRespNumsTests {
 		serial.dummyData = tt.in_dummyData
@@ -412,7 +413,7 @@ var WriteTests = []struct {
 
 func TestWrite(t *testing.T) {
 	serial := newFakeSerial()
-	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
+	im := &IM920{s: serial, m: new(sync.Mutex), readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
 
 	for i, tt := range WriteTests {
 		serial.dummyData = tt.in_dummyData
@@ -509,7 +510,7 @@ func TestRead(t *testing.T) {
 	serial := newFakeSerial()
 
 	for i, tt := range ReadTests {
-		im := &IM920{s: serial, readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
+		im := &IM920{s: serial, m: new(sync.Mutex), readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
 		buf := make([]byte, maxReadSize)
 		serial.dummyData = tt.in
 		for _, v := range tt.in_rcvedData {
@@ -554,7 +555,7 @@ var GetIdTests = []struct {
 
 func TestGetId(t *testing.T) {
 	serial := newFakeSerial()
-	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
+	im := &IM920{s: serial, m: new(sync.Mutex), readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
 
 	for i, tt := range GetIdTests {
 		serial.dummyData = tt.in_dummyData
@@ -602,7 +603,7 @@ var AddRcvIdTests = []struct {
 
 func TestAddRcvId(t *testing.T) {
 	serial := newFakeSerial()
-	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
+	im := &IM920{s: serial, m: new(sync.Mutex), readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
 
 	for i, tt := range AddRcvIdTests {
 		serial.dummyData = tt.in_dummyData
@@ -653,7 +654,7 @@ var GetAllRcvIdTests = []struct {
 
 func TestGetAllRcvId(t *testing.T) {
 	serial := newFakeSerial()
-	im := &IM920{s: serial, readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
+	im := &IM920{s: serial, m: new(sync.Mutex), readTimeout: 100 * time.Millisecond, rcvedData: list.New()}
 
 	for i, tt := range GetAllRcvIdTests {
 		serial.dummyData = tt.in_dummyData
