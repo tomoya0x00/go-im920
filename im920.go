@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
-    "sync"
+	"sync"
 	"time"
 
 	"github.com/tarm/serial"
@@ -39,7 +39,7 @@ type ReadInfo struct {
 
 type IM920 struct {
 	s            io.ReadWriteCloser
-    m            *sync.Mutex
+	m            *sync.Mutex
 	readTimeout  time.Duration
 	lastReadInfo ReadInfo
 	rcvedData    *list.List
@@ -160,7 +160,7 @@ func (im *IM920) receive(p []byte) (readed int, err error) {
 		select {
 		case <-timer.C:
 			if readed == 0 {
-				err = fmt.Errorf("error: Read failed: no data")
+				err = io.EOF
 			}
 			return
 		default:
@@ -217,9 +217,9 @@ func (im *IM920) getResponse(p []byte) (readed int, err error) {
 }
 
 func (im *IM920) IssueCommand(cmd, param string) (resp []byte, err error) {
-    im.m.Lock()
-    defer im.m.Unlock()
-    
+	im.m.Lock()
+	defer im.m.Unlock()
+
 	if !im.waitNotBusy() {
 		err = fmt.Errorf("error: BusyWait failed")
 		return
@@ -330,9 +330,9 @@ func (im *IM920) Write(p []byte) (n int, err error) {
 }
 
 func (im *IM920) Read(p []byte) (n int, err error) {
-    im.m.Lock()
-    defer im.m.Unlock()
-    
+	im.m.Lock()
+	defer im.m.Unlock()
+
 	str := ""
 	if im.rcvedData.Len() > 0 {
 		e := im.rcvedData.Front()
@@ -341,11 +341,11 @@ func (im *IM920) Read(p []byte) (n int, err error) {
 	} else {
 		buf := make([]byte, maxReadSize)
 		readed, err := im.receive(buf)
-		if err != nil {
+		if err != nil && err != io.EOF {
 			return 0, fmt.Errorf("error: Read failed: %s", err)
 		}
 		if readed == 0 {
-			return 0, fmt.Errorf("error: Read failed: no data")
+			return 0, io.EOF
 		}
 		str = string(buf)
 	}
