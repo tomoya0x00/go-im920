@@ -55,7 +55,7 @@ const (
 )
 
 func Open(c *Config) (*IM920, error) {
-	t := (1000 * 100 * 8 / defaultBps) * time.Millisecond
+	t := (1000 * 200 * 8 / defaultBps) * time.Millisecond
 	sc := &serial.Config{Name: c.Name, Baud: defaultBps, ReadTimeout: t}
 	s, err := serial.OpenPort(sc)
 	if err != nil {
@@ -185,31 +185,45 @@ func (im *IM920) receive(p []byte) (readed int, err error) {
 }
 
 func (im *IM920) getResponse(p []byte) (readed int, err error) {
-	rcv := make([]byte, maxReadSize)
-	rcved, rerr := im.receive(rcv)
-	if rerr != nil {
-		err = fmt.Errorf("error: receive failed: %s", rerr)
-		return
-	}
-	if rcved == 0 {
-		err = fmt.Errorf("error: receive failed: no data")
-		return
-	}
+	timer := time.NewTimer(im.readTimeout)
+	defer timer.Stop()
 
-	strs := strings.Split(string(rcv[:rcved]), "\r\n")
-
-	for i, v := range strs {
-		if !strings.Contains(v, ":") {
-			resp := strings.Join(strs[i:], "\r\n")
-			readed = copy(p, resp)
-			break
-		}
-
-		if len(v) > 0 {
-			if i+1 < len(strs) {
-				v += "\r\n"
+	for {
+		select {
+		case <-timer.C:
+			return
+		default:
+			rcv := make([]byte, maxReadSize)
+			rcved, rerr := im.receive(rcv)
+			if rerr != nil {
+				err = fmt.Errorf("error: receive failed: %s", rerr)
+				return
 			}
-			im.rcvedData.PushBack(v)
+			if rcved == 0 {
+				err = fmt.Errorf("error: receive failed: no data")
+				return
+			}
+
+			strs := strings.Split(string(rcv[:rcved]), "\r\n")
+
+			for i, v := range strs {
+				if !strings.Contains(v, ":") {
+					resp := strings.Join(strs[i:], "\r\n")
+					readed = copy(p, resp)
+					break
+				}
+
+				if len(v) > 0 {
+					if i+1 < len(strs) {
+						v += "\r\n"
+					}
+					im.rcvedData.PushBack(v)
+				}
+			}
+
+			if readed > 0 {
+				return
+			}
 		}
 	}
 

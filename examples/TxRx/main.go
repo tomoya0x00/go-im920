@@ -17,7 +17,7 @@ func main() {
 		serialName = "COM4"
 	}
 
-	c := &im920.Config{Name: serialName, ReadTimeout: 1000 * time.Millisecond}
+	c := &im920.Config{Name: serialName, ReadTimeout: 2000 * time.Millisecond}
 	im, err := im920.Open(c)
 	if err != nil {
 		log.Fatalf("Failed to open: %s\n", err)
