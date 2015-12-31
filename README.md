@@ -11,7 +11,7 @@ A Go library to control the interplan IM920
 ## Tested Environment
 
 * ThinkPad T440s(Windows 10) + IM315-USB-RX
-* （近日中に確認予定）Raspberry Pi 2 Model B
+* Raspberry Pi 2 Model B
 
 ## Status
 
